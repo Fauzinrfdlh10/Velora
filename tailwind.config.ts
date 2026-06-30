@@ -43,20 +43,20 @@ const config: Config = {
           950: "#0a0a0a",
         },
         // Semantic theme tokens — diikat ke CSS variables via `<ThemeInject />`.
-        // Pattern `hsl(var(--sana-<token>) / <alpha-value>)` membuat
+        // Pattern `hsl(var(--theme-<token>) / <alpha-value>)` membuat
         // modifier Tailwind `bg-canvas/50` resolusi ke alpha 50%.
-        canvas: "hsl(var(--sana-canvas) / <alpha-value>)",
-        ink: "hsl(var(--sana-ink) / <alpha-value>)",
-        muted: "hsl(var(--sana-muted) / <alpha-value>)",
-        rule: "hsl(var(--sana-rule) / <alpha-value>)",
-        surface: "hsl(var(--sana-surface) / <alpha-value>)",
-        inverseCanvas: "hsl(var(--sana-inverse-canvas) / <alpha-value>)",
-        inverseInk: "hsl(var(--sana-inverse-ink) / <alpha-value>)",
-        accent: "hsl(var(--sana-accent) / <alpha-value>)",
+        canvas: "hsl(var(--theme-canvas) / <alpha-value>)",
+        ink: "hsl(var(--theme-ink) / <alpha-value>)",
+        muted: "hsl(var(--theme-muted) / <alpha-value>)",
+        rule: "hsl(var(--theme-rule) / <alpha-value>)",
+        surface: "hsl(var(--theme-surface) / <alpha-value>)",
+        inverseCanvas: "hsl(var(--theme-inverse-canvas) / <alpha-value>)",
+        inverseInk: "hsl(var(--theme-inverse-ink) / <alpha-value>)",
+        accent: "hsl(var(--theme-accent) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-cormorant)", "Georgia", "serif"],
+        sans: ["var(--theme-font-body)", "system-ui", "sans-serif"],
+        display: ["var(--theme-font-display)", "Georgia", "serif"],
       },
       maxWidth: {
         // Container max-width untuk section invitation pages — diambil dari sana tokens.

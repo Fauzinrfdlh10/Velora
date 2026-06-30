@@ -19,19 +19,20 @@
  * ========================================================================= */
 @layer base {
   :root {
-    /* Tema default: Sana */
-    --sana-canvas: 40 22% 96%; /* #FAF8F4 */
-    --sana-ink: 218 18% 13%; /* #1B1F26 */
-    --sana-muted: 218 6% 47%; /* #6E7480 */
-    --sana-rule: 38 18% 88%; /* #E5E1D8 */
-    --sana-surface: 0 0% 100%; /* #FFFFFF */
-    --sana-inverse-canvas: 218 18% 13%; /* #1B1F26 */
-    --sana-inverse-ink: 40 22% 96%; /* #FAF8F4 */
-    --sana-accent: 157 28% 23%; /* #2A4A3E */
-  }
+    /* Tema default (fallback): Sana (Aksara) */
+    --theme-canvas: 36 21% 94%; /* #F4F0EA */
+    --theme-ink: 25 15% 15%; /* #2C2520 */
+    --theme-muted: 30 10% 45%; /* #7D7268 */
+    --theme-rule: 33 21% 85%; /* #E3DACF */
+    --theme-surface: 30 25% 98%; /* #FCFAF8 */
+    --theme-inverse-canvas: 25 15% 15%; /* #2C2520 */
+    --theme-inverse-ink: 36 21% 94%; /* #F4F0EA */
+    --theme-accent: 30 42% 38%; /* #8C6239 */
 
-  /* Body dasar — font binding di-set di `app/layout.tsx`
-     (`font-sans` & `font-display` via Tailwind). */
+    /* Default font binding */
+    --theme-font-display: var(--font-playfair);
+    --theme-font-body: var(--font-jakarta);
+  }
 }
 
 @layer base {
@@ -44,9 +45,9 @@
     @apply bg-canvas text-ink antialiased;
   }
 
-  /* Display family default — Cormorant Garamond via next/font. */
+  /* Display family default — Playfair Display via next/font. */
   .font-display {
-    font-family: var(--font-cormorant), Georgia, serif;
+    font-family: var(--theme-font-display), Georgia, serif;
     font-feature-settings: "ss01", "liga";
   }
 }

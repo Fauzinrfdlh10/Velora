@@ -13,43 +13,45 @@ import type { ThemeConfig } from "@/lib/themes/types";
  * Font family dan variable harus cocok dengan yang di-declare
  * di `app/layout.tsx` via next/font/google.
  */
+import { sanaColors } from "./tokens";
+
 export const sana: ThemeConfig = {
   name: "sana",
   displayName: "Sana",
   description:
-    "Editorial monokromatik — kalem, berkelas, abadi. " +
-    "Warm off-white + deep ink dengan aksen deep forest. " +
-    "Typography: Cormorant Garamond (display) + Inter (body).",
+    "Modern Heritage — estetika hangat, elegan, dan abadi. " +
+    "Warm sand + deep espresso dengan aksen emas antik. " +
+    "Typography: Playfair Display (display) + Plus Jakarta Sans (body).",
   tokens: {
     colors: {
-      canvas: `hsl(var(--sana-canvas) / <alpha-value>)`,
-      ink: `hsl(var(--sana-ink) / <alpha-value>)`,
-      muted: `hsl(var(--sana-muted) / <alpha-value>)`,
-      rule: `hsl(var(--sana-rule) / <alpha-value>)`,
-      surface: `hsl(var(--sana-surface) / <alpha-value>)`,
-      inverseCanvas: `hsl(var(--sana-inverse-canvas) / <alpha-value>)`,
-      inverseInk: `hsl(var(--sana-inverse-ink) / <alpha-value>)`,
-      accent: `hsl(var(--sana-accent) / <alpha-value>)`,
+      canvas: sanaColors.canvas,
+      ink: sanaColors.ink,
+      muted: sanaColors.muted,
+      rule: sanaColors.rule,
+      surface: sanaColors.surface,
+      inverseCanvas: sanaColors.inverseCanvas,
+      inverseInk: sanaColors.inverseInk,
+      accent: sanaColors.accent,
     },
     fonts: {
       display: {
-        family: "Cormorant Garamond",
-        variable: "--font-cormorant",
+        family: "Playfair Display",
+        variable: "--font-playfair",
         weights: [400, 500, 600, 700],
       },
       body: {
-        family: "Inter",
-        variable: "--font-inter",
-        weights: [400, 500, 600],
+        family: "Plus Jakarta Sans",
+        variable: "--font-jakarta",
+        weights: [400, 500, 600, 700],
       },
     },
     spacing: {
-      sectionPaddingY: "clamp(4rem, 8vw, 7rem)",
-      containerMaxWidth: "72rem",
+      sectionPaddingY: "clamp(3.5rem, 7vw, 6rem)",
+      containerMaxWidth: "68rem",
     },
     motion: {
-      enterDuration: "600ms",
-      enterStagger: "80ms",
+      enterDuration: "500ms",
+      enterStagger: "60ms",
       reducedMotionSafe: true,
     },
   },

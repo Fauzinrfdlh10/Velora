@@ -1,5 +1,4 @@
 import type { ThemeConfig } from "@/lib/themes/types";
-import { sanaColors } from "@/lib/themes/sana/tokens";
 
 /**
  * Velora — Theme Inject (RSC)
@@ -9,40 +8,35 @@ import { sanaColors } from "@/lib/themes/sana/tokens";
  *
  * Komponen-komponen section tinggal memakai kelas Tailwind semantic
  * (`bg-canvas`, `text-ink`, dst) — yang diikat Tailwind ke expression
- * `hsl(var(--sana-<token>) / <alpha-value>)`, dan token-nya di-set
- * di sini.
+ * `hsl(var(--theme-<token>) / <alpha-value>)`, dan token-nya di-set
+ * di sini secara dinamis berdasarkan tema aktif.
  *
  * Aman untuk RSC: konten style tag dihasilkan dari module tema
  * (bukan user input), tidak ada risiko XSS via dangerouslySetInnerHTML.
- *
- * Untuk TAHAP 5: hanya 1 tema (sana). Multi-tema nanti: refactor map
- * nama→CSS-string per theme (lihat catatan ThemeName union di types.ts).
  */
-const SANA_VAR_NAMES: Record<keyof typeof sanaColors, string> = {
-  canvas: "--sana-canvas",
-  ink: "--sana-ink",
-  muted: "--sana-muted",
-  rule: "--sana-rule",
-  surface: "--sana-surface",
-  inverseCanvas: "--sana-inverse-canvas",
-  inverseInk: "--sana-inverse-ink",
-  accent: "--sana-accent",
-};
-
-function buildSanaCss(): string {
-  const declarations = (Object.keys(sanaColors) as Array<keyof typeof sanaColors>)
-    .map((key) => `${SANA_VAR_NAMES[key]}: ${sanaColors[key]};`)
-    .join("\n  ");
-  return `:root {\n  ${declarations}\n}`;
-}
-
 export function ThemeInject({ theme }: { theme: ThemeConfig }) {
-  if (theme.name !== "sana") return null;
+  if (!theme || !theme.tokens) return null;
+
+  const colorDeclarations = Object.entries(theme.tokens.colors)
+    .map(([key, val]) => {
+      // Ubah camelCase (mis. inverseCanvas) ke kebab-case (inverse-canvas)
+      const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+      return `--theme-${cssKey}: ${val};`;
+    })
+    .join("\n  ");
+
+  const fontDeclarations = `
+  --theme-font-display: var(${theme.tokens.fonts.display.variable});
+  --theme-font-body: var(${theme.tokens.fonts.body.variable});
+  `;
+
+  const css = `:root {\n  ${colorDeclarations}\n  ${fontDeclarations}\n}`;
+
   return (
     <style
       // dangerouslySetInnerHTML aman: konten berasal dari module tema,
       // bukan user input.
-      dangerouslySetInnerHTML={{ __html: buildSanaCss() }}
+      dangerouslySetInnerHTML={{ __html: css }}
       data-theme={theme.name}
     />
   );

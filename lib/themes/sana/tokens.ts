@@ -22,12 +22,12 @@
  */
 
 export const sanaColors = {
-  canvas: "40 22% 96%", // #FAF8F4
-  ink: "218 18% 13%", // #1B1F26
-  muted: "218 6% 47%", // #6E7480
-  rule: "38 18% 88%", // #E5E1D8
-  surface: "0 0% 100%", // #FFFFFF
-  inverseCanvas: "218 18% 13%", // #1B1F26
-  inverseInk: "40 22% 96%", // #FAF8F4
-  accent: "157 28% 23%", // #2A4A3E
+  canvas: "36 21% 94%", // #F4F0EA
+  ink: "25 15% 15%", // #2C2520
+  muted: "30 10% 45%", // #7D7268
+  rule: "33 21% 85%", // #E3DACF
+  surface: "30 25% 98%", // #FCFAF8
+  inverseCanvas: "25 15% 15%", // #2C2520
+  inverseInk: "36 21% 94%", // #F4F0EA
+  accent: "30 42% 38%", // #8C6239
 } as const;

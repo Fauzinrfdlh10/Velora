@@ -25,30 +25,41 @@ export function GallerySection({
 
   return (
     <SectionShell theme={theme} id="gallery" ariaLabel="Galeri Foto">
-      <div className="mb-8 text-center">
-        <Images
-          size={28}
-          aria-hidden="true"
-          className="mx-auto mb-3 text-accent"
-        />
-        <h2 className="font-display text-2xl italic text-ink sm:text-3xl">
-          Galeri
+      <div className="mb-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-rule/80 bg-surface/50 text-accent backdrop-blur-sm shadow-sm">
+          <Images size={20} aria-hidden="true" />
+        </div>
+        <h2 className="font-display text-3xl font-semibold italic text-ink">
+          Galeri Foto
         </h2>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-muted">
+          momen bahagia kami
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
-        {photos.map((p) => (
-        <div key={p.id} className="aspect-square overflow-hidden bg-rule">
-          {/* eslint-disable-next-line @next/next/no-img-element -- TODO Tahap 6: migrate to next/image + add picsum.photos + Supabase storage to next.config images.remotePatterns */}
-          <img
-            src={p.url}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        </div>
-        ))}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        {photos.map((p, idx) => {
+          // Alternating grid styling for premium editorial aesthetic
+          const isLandscape = idx === 0 || idx === 5;
+          const gridClasses = isLandscape
+            ? "col-span-2 aspect-[16/10] md:col-span-2 shadow-sm"
+            : "col-span-1 aspect-[3/4] shadow-sm";
+          return (
+            <div
+              key={p.id}
+              className={`relative overflow-hidden rounded-md bg-rule/40 border border-rule/45 transition duration-500 hover:scale-[1.01] hover:shadow-md ${gridClasses}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- TODO Tahap 6: migrate to next/image + add picsum.photos + Supabase storage to next.config images.remotePatterns */}
+              <img
+                src={p.url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition duration-700 hover:scale-105"
+              />
+            </div>
+          );
+        })}
       </div>
     </SectionShell>
   );

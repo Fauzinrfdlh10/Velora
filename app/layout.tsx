@@ -1,24 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, Cormorant_Garamond } from "next/font/google";
+import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 /**
- * Display font untuk tema undangan (saat ini 'Sana'). next/font
- * self-host font + inject CSS variable. font-display Tailwind
- * utility merujuk ke `--font-cormorant` (lihat tailwind.config.ts),
- * sehingga section components cukup `font-display` tanpa tahu nama font.
+ * Display font untuk tema undangan (saat ini 'Sana' / Aksara). next/font
+ * self-host font + inject CSS variable.
  */
-const cormorant = Cormorant_Garamond({
+const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
-  variable: "--font-cormorant",
+  variable: "--font-playfair",
   display: "swap",
 });
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
@@ -36,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body
-        className={`${inter.variable} ${cormorant.variable} antialiased`}
+        className={`${jakarta.variable} ${playfair.variable} antialiased`}
       >
         {children}
       </body>

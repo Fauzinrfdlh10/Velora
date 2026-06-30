@@ -55,9 +55,12 @@ export function EventDetailsSection({
 
   return (
     <SectionShell theme={theme} id="event" ariaLabel="Detail Acara">
-      <div className="mb-10 text-center">
-        <h2 className="font-display text-2xl italic text-ink sm:text-3xl">
-          Acara
+      <div className="mb-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-rule/80 bg-surface/50 text-accent backdrop-blur-sm shadow-sm">
+          <CalendarBlank size={20} aria-hidden="true" />
+        </div>
+        <h2 className="font-display text-3xl font-semibold italic text-ink">
+          Detail Acara
         </h2>
         <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-muted">
           akad &amp; resepsi
@@ -65,8 +68,8 @@ export function EventDetailsSection({
       </div>
 
       <div
-        className={`mx-auto grid max-w-3xl gap-6 ${
-          sameDay ? "md:grid-cols-2" : ""
+        className={`mx-auto grid max-w-4xl gap-8 ${
+          sameDay ? "md:grid-cols-2" : "grid-cols-1"
         }`}
       >
         {akad ? (
@@ -125,32 +128,41 @@ function EventRow({
   const gcalHref = buildGoogleCalendarUrl(kind, date, location);
 
   return (
-    <article className="rounded-sm border border-rule bg-surface p-6">
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-accent">
-        <CalendarBlank size={16} aria-hidden="true" />
-        <span>{kind}</span>
+    <article className="relative overflow-hidden rounded-lg border border-rule/75 bg-surface p-8 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] transition duration-300 hover:shadow-[0_10px_35px_-5px_rgba(0,0,0,0.05)]">
+      {/* Top accent highlighting line */}
+      <div className="absolute top-0 inset-x-0 h-[4px] bg-accent/70" />
+
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10 text-accent">
+          <CalendarBlank size={16} aria-hidden="true" />
+        </div>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent">
+          {kind}
+        </span>
       </div>
-      <div className="mt-3 font-display text-2xl text-ink sm:text-3xl">
+
+      <div className="mt-5 font-display text-2xl font-semibold leading-snug text-ink sm:text-3xl">
         {formatEventDate(date)}
       </div>
+
       {location ? (
-        <div className="mt-2 flex items-start gap-2 text-sm text-muted">
+        <div className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-muted">
           <MapPin
             size={16}
             aria-hidden="true"
-            className="mt-0.5 shrink-0"
+            className="mt-0.5 shrink-0 text-accent/80"
           />
           <span>{location}</span>
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-8 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {maps ? (
           <a
             href={maps}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-sm border border-ink px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-inverseInk"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-accent/85 px-4 py-2.5 text-xs font-semibold tracking-wide text-accent transition duration-300 hover:bg-accent hover:text-inverseInk shadow-sm w-full sm:w-auto"
           >
             Buka Maps
             <ArrowSquareOut size={14} aria-hidden="true" />
@@ -160,7 +172,7 @@ function EventRow({
           href={gcalHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-sm bg-ink px-3 py-1.5 text-xs font-medium text-inverseInk transition hover:bg-accent"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-xs font-semibold tracking-wide text-inverseInk transition duration-300 hover:bg-accent/90 hover:shadow-md shadow-sm w-full sm:w-auto"
         >
           Google Calendar
           <ArrowSquareOut size={14} aria-hidden="true" />
@@ -168,7 +180,7 @@ function EventRow({
         <a
           href={icsHref}
           download
-          className="inline-flex items-center gap-1.5 rounded-sm border border-rule px-3 py-1.5 text-xs font-medium text-muted transition hover:border-ink hover:text-ink"
+          className="inline-flex items-center justify-center gap-1.5 rounded-full border border-rule px-4 py-2.5 text-xs font-medium tracking-wide text-muted transition duration-300 hover:border-ink hover:text-ink w-full sm:w-auto"
         >
           Unduh .ics
         </a>
@@ -209,7 +221,7 @@ function buildGoogleCalendarUrl(
   kind: "Akad" | "Resepsi",
   iso: string,
   location: string | null,
-): string {
+ ): string {
   const d = new Date(iso);
   const fmt = (dt: Date) =>
     dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");

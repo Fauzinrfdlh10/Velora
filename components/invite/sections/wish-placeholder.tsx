@@ -34,13 +34,11 @@ export function WishPlaceholderSection({
 
   return (
     <SectionShell theme={theme} id="wish" ariaLabel="Ucapan & Doa">
-      <div className="mb-8 text-center">
-        <Quotes
-          size={28}
-          aria-hidden="true"
-          className="mx-auto mb-3 text-accent"
-        />
-        <h2 className="font-display text-2xl italic text-ink sm:text-3xl">
+      <div className="mb-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-rule/80 bg-surface/50 text-accent backdrop-blur-sm shadow-sm">
+          <Quotes size={20} aria-hidden="true" />
+        </div>
+        <h2 className="font-display text-3xl font-semibold italic text-ink">
           Ucapan &amp; Doa
         </h2>
         <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-muted">
@@ -54,26 +52,26 @@ export function WishPlaceholderSection({
           Belum ada ucapan. Jadilah yang pertama!
         </p>
       ) : (
-        <ul className="mx-auto max-w-2xl space-y-3">
+        <ul className="mx-auto max-w-xl space-y-4">
           {list.map((w) => (
             <li
               key={w.id}
-              className="rounded-sm border border-rule bg-surface px-5 py-4"
+              className="rounded-lg border border-rule/75 bg-surface px-6 py-5 shadow-[0_3px_15px_-4px_rgba(0,0,0,0.02)] transition duration-300 hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.03)]"
             >
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-medium uppercase text-inverseInk">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[11px] font-bold uppercase text-accent">
                   {initials(w.name)}
                 </div>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-baseline justify-between gap-1">
-                    <span className="text-sm font-medium text-ink">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="text-sm font-semibold text-ink truncate">
                       {w.name}
                     </span>
-                    <span className="text-[10px] uppercase tracking-[0.24em] text-muted">
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted">
                       {relative(w.created_at)}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink/90">
+                  <p className="mt-2 text-sm leading-relaxed text-ink/80 break-words">
                     {w.message}
                   </p>
                 </div>
@@ -88,7 +86,6 @@ export function WishPlaceholderSection({
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim() || !message.trim()) return;
-          // Tahap 5: hanya local state. Tahap 6+:Server Action.
           console.log("[wish placeholder] submit", { name, message });
           setList((cur) => [
             {
@@ -102,9 +99,9 @@ export function WishPlaceholderSection({
           setName("");
           setMessage("");
         }}
-        className="mx-auto mt-10 max-w-md"
+        className="mx-auto mt-12 max-w-md rounded-lg border border-rule/75 bg-surface p-6 sm:p-8 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)]"
       >
-        <h3 className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-muted">
+        <h3 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-accent">
           <Heart
             size={14}
             aria-hidden="true"
@@ -113,14 +110,14 @@ export function WishPlaceholderSection({
           />
           Kirim Ucapan
         </h3>
-        <div className="mt-4 space-y-3">
+        <div className="mt-5 space-y-4">
           <input
             type="text"
             required
             placeholder="Nama Anda"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border-b border-rule bg-transparent px-0 py-2 text-sm text-ink placeholder:text-muted focus:border-ink focus:outline-none"
+            className="w-full border-b border-rule/80 bg-transparent px-1 py-2 text-sm text-ink placeholder:text-muted/50 focus:border-accent focus:outline-none transition duration-300"
           />
           <textarea
             required
@@ -128,19 +125,16 @@ export function WishPlaceholderSection({
             placeholder="Tulis doa & ucapan untuk pengantin…"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full resize-none border-b border-rule bg-transparent px-0 py-2 text-sm text-ink placeholder:text-muted focus:border-ink focus:outline-none"
+            className="w-full resize-none border-b border-rule/80 bg-transparent px-1 py-2 text-sm text-ink placeholder:text-muted/50 focus:border-accent focus:outline-none transition duration-300"
           />
         </div>
         <button
           type="submit"
-          className="mt-5 inline-flex items-center gap-2 rounded-sm bg-ink px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.28em] text-inverseInk transition hover:bg-accent"
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-inverseInk shadow-sm transition duration-300 hover:bg-accent/90 hover:shadow"
         >
           <PaperPlaneTilt size={14} aria-hidden="true" />
-          Kirim
+          Kirim Ucapan
         </button>
-        <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-muted">
-          placeholder — submission menyusul di tahap berikutnya
-        </p>
       </form>
     </SectionShell>
   );

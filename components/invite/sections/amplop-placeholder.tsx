@@ -32,14 +32,12 @@ export function AmplopPlaceholderSection({
 
   return (
     <SectionShell theme={theme} id="amplop" ariaLabel="Amplop Digital">
-      <div className="mb-8 text-center">
-        <Bank
-          size={28}
-          aria-hidden="true"
-          className="mx-auto mb-3 text-accent"
-        />
-        <h2 className="font-display text-2xl italic text-ink sm:text-3xl">
-          Amplop Digital
+      <div className="mb-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-rule/80 bg-surface/50 text-accent backdrop-blur-sm shadow-sm">
+          <Bank size={20} aria-hidden="true" />
+        </div>
+        <h2 className="font-display text-3xl font-semibold italic text-ink">
+          Kado Digital
         </h2>
         <p className="mt-2 text-[10px] uppercase tracking-[0.32em] text-muted">
           amplop digital
@@ -51,64 +49,65 @@ export function AmplopPlaceholderSection({
           Belum ada rekening yang ditambahkan oleh pengantin.
         </p>
       ) : (
-        <div className="mx-auto max-w-xl space-y-4">
+        <div className="mx-auto max-w-lg space-y-5">
           {accounts.map((acct, i) => (
             <article
               key={`${acct.bank}-${acct.account_number}-${i}`}
-              className="rounded-sm border-y border-rule bg-surface px-5 py-5"
+              className="relative overflow-hidden rounded-lg border border-rule/75 bg-surface p-6 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] transition duration-300 hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.04)]"
             >
-              <div className="flex items-baseline justify-between gap-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.28em] text-accent">
-                    {acct.bank}
-                  </div>
-                  <div className="mt-1 text-sm font-medium text-ink">
-                    {acct.account_name}
-                  </div>
+              {/* Left accent color strip */}
+              <div className="absolute left-0 inset-y-0 w-[4px] bg-accent/70" />
+              
+              <div className="pl-2">
+                <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent">
+                  {acct.bank}
                 </div>
-              </div>
+                <div className="mt-1 text-base font-semibold text-ink">
+                  {acct.account_name}
+                </div>
 
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-sm bg-canvas px-3 py-2.5">
-                <code className="font-mono text-base tabular-nums text-ink">
-                  {maskAccount(acct.account_number)}
-                </code>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(acct.account_number);
-                      setCopiedIndex(i);
-                      setTimeout(
-                        () =>
-                          setCopiedIndex((cur) => (cur === i ? null : cur)),
-                        1800,
-                      );
-                    } catch {
-                      alert(`Nomor rekening: ${acct.account_number}`);
-                    }
-                  }}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-ink px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-ink transition hover:bg-ink hover:text-inverseInk"
-                  aria-label={`Salin nomor rekening ${acct.bank}`}
-                >
-                  <Copy size={14} aria-hidden="true" />
-                  {copiedIndex === i ? "Tersalin" : "Salin"}
-                </button>
-              </div>
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-canvas/60 border border-rule/45 px-4 py-3">
+                  <code className="font-mono text-base font-semibold tabular-nums text-ink tracking-wider">
+                    {maskAccount(acct.account_number)}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(acct.account_number);
+                        setCopiedIndex(i);
+                        setTimeout(
+                          () =>
+                            setCopiedIndex((cur) => (cur === i ? null : cur)),
+                          1800,
+                        );
+                      } catch {
+                        alert(`Nomor rekening: ${acct.account_number}`);
+                      }
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/80 px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent transition duration-300 hover:bg-accent hover:text-inverseInk shadow-sm"
+                    aria-label={`Salin nomor rekening ${acct.bank}`}
+                  >
+                    <Copy size={12} aria-hidden="true" />
+                    {copiedIndex === i ? "Tersalin!" : "Salin"}
+                  </button>
+                </div>
 
-              {acct.notes ? (
-                <p className="mt-3 text-xs italic text-muted">{acct.notes}</p>
-              ) : null}
+                {acct.notes ? (
+                  <p className="mt-3 text-xs italic text-muted/80">{acct.notes}</p>
+                ) : null}
+              </div>
             </article>
           ))}
         </div>
       )}
 
-      <p className="mt-8 text-center text-xs text-muted">
+      <p className="mt-10 text-center text-xs tracking-wide text-muted">
         Doa &amp; restu Anda sudah lebih dari cukup.
         <Heart
           size={12}
           aria-hidden="true"
-          className="ml-1 inline align-[-0.1em] text-accent"
+          className="ml-1.5 inline align-[-0.05em] text-accent"
           weight="fill"
         />
       </p>
