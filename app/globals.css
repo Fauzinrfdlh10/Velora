@@ -2,4 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Placeholder styling — akan diganti dengan design system di tahap berikutnya */
+/* ============================================================================
+ * Velora — Base Layer
+ * --------------------------------------------------------------------
+ * Default CSS variables (fallback) untuk tema undangan. Tema aktif
+ * menimpa nilai-nilai ini via `<ThemeInject />` di halaman `/i/[slug]`.
+ *
+ * Nilai HARUS cocok dengan `lib/themes/<name>/tokens.ts` — satu sumber
+ * kebenaran palette. Tailwind colors di `tailwind.config.ts` merujuk
+ * ke nama variable (`--sana-canvas`, dst.) sehingga perubahan di sini
+ * langsung mengubah seluruh sistem.
+ *
+ * Untuk tambah tema baru: tambahkan block default di sini dengan nama
+ * variable yang cocok (mis. `--lunara-canvas`), extend `extend.colors`
+ * di tailwind.config.ts, dan inject di `<ThemeInject />`.
+ * ========================================================================= */
+@layer base {
+  :root {
+    /* Tema default: Sana */
+    --sana-canvas: 40 22% 96%; /* #FAF8F4 */
+    --sana-ink: 218 18% 13%; /* #1B1F26 */
+    --sana-muted: 218 6% 47%; /* #6E7480 */
+    --sana-rule: 38 18% 88%; /* #E5E1D8 */
+    --sana-surface: 0 0% 100%; /* #FFFFFF */
+    --sana-inverse-canvas: 218 18% 13%; /* #1B1F26 */
+    --sana-inverse-ink: 40 22% 96%; /* #FAF8F4 */
+    --sana-accent: 157 28% 23%; /* #2A4A3E */
+  }
+
+  /* Body dasar — font binding di-set di `app/layout.tsx`
+     (`font-sans` & `font-display` via Tailwind). */
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+
+  /* Display family default — Cormorant Garamond via next/font. */
+  .font-display {
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-feature-settings: "ss01", "liga";
+  }
+}
+
+/* ============================================================================
+ * Reduced motion — hormati preferensi user.
+ * Tailwind tidak punya utility untuk ini di v3.4, jadi raw CSS.
+ * ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+ * Print — undangan sering di-print untuk dokumentasi fisik.
+ * Hilangkan warna chrome, pertahankan tipografi & layout undangan.
+ * ========================================================================= */
+@media print {
+  nav,
+  button {
+    display: none !important;
+  }
+}

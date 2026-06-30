@@ -1,268 +1,270 @@
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate } from "@/lib/utils";
+import { resolveTheme } from "@/lib/themes/resolver";
+import { InvitationRenderer } from "@/components/invite/invitation-renderer";
+import { ThemeInject } from "@/components/invite/theme-inject";
+import { SectionShell } from "@/components/invite/section-shell";
+import { getMockInvitation } from "@/lib/mock/client";
+import type {
+  PublicInvitationData,
+  PageRenderState,
+} from "@/types/invitation";
+import type { BankAccount } from "@/types/database";
 
 /**
- * Halaman undangan publik.
+ * Velora — Public Invitation Page (RSC)
+ * -------------------------------------------------------------------
+ * Entry untuk `/i/<slug>`. Middleware mem-rewrite `<slug>.domain.com`
+ * ke path ini, menyertakan query param `?to=Nama` (lihat middleware.ts).
  *
- * Tujuan tahap ini (Tahap 4):
- *   - Routing berdasarkan [slug] (didapati dari subdomain via middleware
- *     rewrite ATAU dari URL path langsung di dev/test).
- *   - Fetch data klien via RPC `get_public_client_by_slug` (SECURITY
- *     DEFINER) sehingga aplikasi dapat membedakan 404 vs inactive/expired
- *     tanpa Service Role key di app layer.
- *   - Sapa tamu personal via `?to=Firna` (case-insensitive name match ke
- *     tabel `guests`, fallback ke raw input).
- *   - Render plain HTML dengan Tailwind classes minimal — placeholder
- *     untuk theme/tema final di prompt berikutnya.
+ * Alur:
+ *   1. Cek env VELORA_USE_MOCK_CLIENT=1 → pakai mock, skip DB.
+ *   2. Panggil RPC `get_public_client_by_slug` (anon-safe via RLS,
+ *      SECURITY DEFINER sehingga expose `status` & `expires_at` lengkap).
+ *   3. Fetch data turunan paralel: gallery, wishes (visible), bank_accounts.
+ *   4. Tentukan PageRenderState (active|inactive|expired|not-found).
+ *   5. Render sesuai state. Hanya `active` yang memakai 7-section theme.
  *
- * Strategi keamanan:
- *   - Baca data via anon key + RPC dengan permission grant untuk `anon`.
- *     RPC hanya me-return kolom publik (lihat migration).
- *   - RSC ini TIDAK me-return raw row ke client — hanya kolom publik
- *     yang terpilih untuk rendering.
- *   - Auth check tidak dilakukan di sini karena halaman publik memang
- *     boleh diakses tanpa login. Middleware tidak mengarahkan /i/* ke
- *     login karena tidak diperlukan.
- *
- * Strategi performa:
- *   - Server component (RSC) secara default = zero JS bundle untuk
- *     undangan UI. First paint cepat di 3G.
- *   - Tailwind di-purge otomatis oleh Next.js — class yang dipakai
- *     saja yang dikirim.
- *   - `cookies()` tidak dipanggil di sini (tidak perlu), sehingga Next.js
- *     memberi perlakuan dynamic render per request — tidak ada caching
- *     static yang keliru.
+ * Tidak ada data klien valid → not-found. Status 'draft'/'inactive' →
+ * inactive view. Expired → expired view. Active → full invitation.
  */
 
-type Params = { slug: string };
-type SearchParams = { to?: string };
-
-/** Shape dari kolom publik yang dikembalikan RPC. */
-type PublicClient = {
-  id: string;
-  slug: string;
-  groom_name: string;
-  bride_name: string;
-  akad_date: string | null;
-  akad_location: string | null;
-  akad_maps_url: string | null;
-  resepsi_date: string | null;
-  resepsi_location: string | null;
-  resepsi_maps_url: string | null;
-  theme: string;
-  status: "draft" | "active" | "inactive" | "expired";
-  expires_at: string;
-};
-
-/* ──────────────── generateMetadata ──────────────── */
+type SearchParams = Promise<{ to?: string | string[] }>;
+type RouteParams = Promise<{ slug: string }>;
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<Params>;
+  params: RouteParams;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const client = await fetchPublicClient(slug);
-
-  if (!client || client.status !== "active") {
-    return {
-      title: "Undangan tidak ditemukan — Velora",
-      robots: { index: false, follow: false },
-    };
-  }
-
   return {
-    title: `${client.groom_name} & ${client.bride_name} — Velora`,
-    description: `Undangan pernikahan ${client.groom_name} & ${client.bride_name}`,
+    title: `Undangan ${slug} · Velora`,
+    description: "Undangan pernikahan digital dari Velora.",
+    robots: { index: true, follow: true },
   };
 }
-
-/* ──────────────── Page ──────────────── */
 
 export default async function InvitationPage({
   params,
   searchParams,
 }: {
-  params: Promise<Params>;
-  searchParams: Promise<SearchParams>;
+  params: RouteParams;
+  searchParams: SearchParams;
 }) {
-  const [{ slug }, { to }] = await Promise.all([params, searchParams]);
-  const supabase = await createClient();
+  const useMock = process.env.VELORA_USE_MOCK_CLIENT === "1";
 
-  // RPC SECURITY DEFINER dengan permission anon. Hanya kolom publik yang
-  // dikembalikan (lihat migration). Tidak ada Service Role key di app.
-  const { data, error } = await supabase.rpc("get_public_client_by_slug", {
-    p_slug: slug,
-  });
+  const [{ slug }, sp] = await Promise.all([params, searchParams]);
+  const guestName = parseGuestName(sp?.to);
 
-  if (error || !data || data.length === 0) {
-    notFound();
+  const state: PageRenderState = useMock
+    ? { kind: "active", data: withGuestName(getMockInvitation(), guestName) }
+    : await fetchRealState(slug, guestName);
+
+  switch (state.kind) {
+    case "not-found":
+      return <NotFoundView slug={slug} />;
+    case "inactive":
+      return <InactiveView state={state} slug={slug} />;
+    case "expired":
+      return <ExpiredView state={state} slug={slug} />;
+    case "active":
+      return (
+        <InvitationRenderer
+          slug={slug}
+          theme={resolveTheme(state.data.client.theme)}
+          data={state.data}
+        />
+      );
   }
-
-  const client = data[0] as PublicClient;
-
-  // Cek status lengkap. Anon RLS policy hanya expose active+not-expired
-  // sehingga tanpa RPC kita tidak akan sampai di sini untuk kasus lain.
-  const isExpired =
-    client.status === "expired" ||
-    new Date(client.expires_at).getTime() < Date.now();
-
-  if (client.status !== "active" || isExpired) {
-    return <UnavailableView client={client} />;
-  }
-
-  // Sapa tamu via ?to=<name>. Lookup case-insensitive name match ke
-  // tabel guests. Jika tidak ditemukan, pakai raw input.
-  let guestName: string | null = null;
-  const candidate = typeof to === "string" ? to.trim() : "";
-  if (candidate) {
-    const { data: matchedGuest } = await supabase
-      .from("guests")
-      .select("name")
-      .eq("client_id", client.id)
-      .ilike("name", candidate)
-      .limit(1)
-      .maybeSingle();
-    guestName = matchedGuest?.name ?? candidate;
-  }
-
-  return <ActiveInvitationView client={client} guestName={guestName} />;
 }
 
-/* ──────────────── Helpers ──────────────── */
+function parseGuestName(v: string | string[] | undefined): string | null {
+  if (!v) return null;
+  const raw = Array.isArray(v) ? v[0] : v;
+  const trimmed = raw?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+}
+
+function withGuestName(
+  data: PublicInvitationData,
+  guestName: string | null,
+): PublicInvitationData {
+  return { ...data, guestName };
+}
 
 /**
- * Fetch klien publik by slug.
- *
- * Dibungkus dengan `react#cache()` agar pemanggilan `generateMetadata` dan
- * Page component dalam satu request yang sama menggunakan hasil yang sama
- * (dedupe intra-request). Tanpa ini, RPC di Supabase dipanggil 2x per page
- * view.
+ * State resolver untuk klien sungguhan (non-mock). Tahap berikutnya
+ * akan mem-orchestrate ketiga fetch paralel dalam satu Promise.all
+ * dengan agregasi error handling — saat ini sequential untuk debug.
  */
-const fetchPublicClient = cache(
-  async (slug: string): Promise<PublicClient | null> => {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.rpc("get_public_client_by_slug", {
-        p_slug: slug,
-      });
-      if (!data || data.length === 0) return null;
-      return data[0] as PublicClient;
-    } catch {
-      return null;
-    }
-  },
-);
+async function fetchRealState(
+  slug: string,
+  guestName: string | null,
+): Promise<PageRenderState> {
+  const supabase = await createClient();
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_public_client_by_slug",
+    { p_slug: slug },
+  );
+  const row = Array.isArray(rpcData) ? rpcData[0] : rpcData;
 
-/* ──────────────── Views ──────────────── */
+  if (rpcError || !row) {
+    return { kind: "not-found" };
+  }
 
-function ActiveInvitationView({
-  client,
-  guestName,
-}: {
-  client: PublicClient;
-  guestName: string | null;
-}) {
+  const status = row.status as "draft" | "active" | "inactive" | "expired";
+  const isExpired = new Date(row.expires_at).getTime() < Date.now();
+
+  if (status === "draft" || status === "inactive") {
+    return {
+      kind: "inactive",
+      reason:
+        status === "draft"
+          ? "Undangan ini masih dalam tahap persiapan oleh pengantin."
+          : "Undangan ini untuk sementara tidak ditampilkan.",
+      groom_name: row.groom_name,
+      bride_name: row.bride_name,
+    };
+  }
+  if (isExpired) {
+    return {
+      kind: "expired",
+      expires_at: row.expires_at,
+      groom_name: row.groom_name,
+      bride_name: row.bride_name,
+    };
+  }
+
+  // Fetch data turunan secara paralel.
+  const [galleryRes, wishesRes, bankRes] = await Promise.all([
+    supabase
+      .from("gallery_photos")
+      .select("id, url, position")
+      .eq("client_id", row.id)
+      .order("position", { ascending: true }),
+    supabase
+      .from("wishes")
+      .select("id, name, message, created_at")
+      .eq("client_id", row.id)
+      .eq("status", "visible")
+      .order("created_at", { ascending: false })
+      .limit(20),
+    supabase
+      .from("clients")
+      .select("bank_accounts")
+      .eq("id", row.id)
+      .maybeSingle(),
+  ]);
+
+  return {
+    kind: "active",
+    data: {
+      client: {
+        id: row.id,
+        slug: row.slug,
+        groom_name: row.groom_name,
+        bride_name: row.bride_name,
+        akad_date: row.akad_date,
+        akad_location: row.akad_location,
+        akad_maps_url: row.akad_maps_url,
+        resepsi_date: row.resepsi_date,
+        resepsi_location: row.resepsi_location,
+        resepsi_maps_url: row.resepsi_maps_url,
+        theme: row.theme,
+        status,
+        expires_at: row.expires_at,
+      },
+      gallery: galleryRes.data ?? [],
+      wishes: wishesRes.data ?? [],
+      // bank_accounts adalah JSONB di DB. Supabase decode otomatis ke JS value,
+      // tapi tanpa generated types (lihat types/database.ts) hasilnya `any`.
+      // Cast eksplisit ke BankAccount[] untuk safety saat DB type digenerate
+      // di prompt berikutnya via `supabase gen types typescript --linked`.
+      bankAccounts: (bankRes.data?.bank_accounts ?? []) as BankAccount[],
+      guestName,
+    },
+  };
+}
+
+/* ─────────── State views (theme-aware) ─────────── */
+
+function NotFoundView({ slug }: { slug: string }) {
+  const theme = resolveTheme("sana");
   return (
-    <main className="min-h-screen bg-neutral-50 px-4 py-12 sm:px-6">
-      <article className="mx-auto max-w-2xl space-y-12 text-neutral-800">
-        {guestName ? (
-          <p className="text-center text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Kepada Yth. {guestName}
+    <main>
+      <ThemeInject theme={theme} />
+      <SectionShell theme={theme} ariaLabel="Undangan tidak ditemukan">
+        <div className="mx-auto max-w-md text-center">
+          <h1 className="font-display text-4xl text-ink">Tidak ditemukan</h1>
+          <p className="mt-3 text-sm text-muted">
+            Undangan dengan slug{" "}
+            <span className="font-mono">{slug}</span> tidak tersedia. Periksa
+            kembali link Anda.
           </p>
-        ) : null}
-
-        <header className="text-center">
-          <p className="text-xs uppercase tracking-widest text-neutral-400">
-            The Wedding of
-          </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl">
-            {client.groom_name}
-            <span className="mx-2 text-neutral-300">&amp;</span>
-            {client.bride_name}
-          </h1>
-        </header>
-
-        {client.akad_date ? (
-          <EventSection
-            title="Akad"
-            date={client.akad_date}
-            location={client.akad_location}
-            mapsUrl={client.akad_maps_url}
-          />
-        ) : null}
-
-        {client.resepsi_date ? (
-          <EventSection
-            title="Resepsi"
-            date={client.resepsi_date}
-            location={client.resepsi_location}
-            mapsUrl={client.resepsi_maps_url}
-          />
-        ) : null}
-
-        <footer className="pt-6 text-center text-xs text-neutral-400">
-          Powered by Velora
-        </footer>
-      </article>
+        </div>
+      </SectionShell>
     </main>
   );
 }
 
-function EventSection({
-  title,
-  date,
-  location,
-  mapsUrl,
+function InactiveView({
+  state,
+  slug,
 }: {
-  title: string;
-  date: string;
-  location: string | null;
-  mapsUrl: string | null;
+  state: Extract<PageRenderState, { kind: "inactive" }>;
+  slug: string;
 }) {
+  const theme = resolveTheme("sana");
   return (
-    <section className="space-y-1.5 text-center">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-        {title}
-      </h2>
-      <p className="text-xl font-semibold text-neutral-800">
-        {formatDate(date)}
-      </p>
-      {location ? <p className="text-base text-neutral-700">{location}</p> : null}
-      {mapsUrl ? (
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block text-sm text-neutral-600 underline hover:text-neutral-900"
-        >
-          Buka di Google Maps
-        </a>
-      ) : null}
-    </section>
+    <main>
+      <ThemeInject theme={theme} />
+      <SectionShell theme={theme} ariaLabel="Undangan tidak aktif">
+        <div className="mx-auto max-w-md text-center">
+          <h1 className="font-display text-4xl text-ink">Belum siap</h1>
+          <p className="mt-3 text-sm text-muted">{state.reason}</p>
+          <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-accent">
+            {slug}
+          </p>
+        </div>
+      </SectionShell>
+    </main>
   );
 }
 
-function UnavailableView({ client }: { client: PublicClient }) {
+function ExpiredView({
+  state,
+  slug,
+}: {
+  state: Extract<PageRenderState, { kind: "expired" }>;
+  slug: string;
+}) {
+  const theme = resolveTheme("sana");
   return (
-    <main className="min-h-screen bg-neutral-50 px-4 py-20 sm:px-6">
-      <article className="mx-auto max-w-xl space-y-4 text-center">
-        <p className="text-xs font-medium uppercase tracking-widest text-neutral-400">
-          Undangan
-        </p>
-        <h1 className="text-2xl font-semibold text-neutral-900 sm:text-3xl">
-          {client.groom_name}
-          <span className="mx-2 text-neutral-300">&amp;</span>
-          {client.bride_name}
-        </h1>
-        <p className="mt-6 text-base text-neutral-600">
-          Mohon maaf, undangan ini sudah tidak aktif. Terima kasih atas
-          perhatian Anda.
-        </p>
-      </article>
+    <main>
+      <ThemeInject theme={theme} />
+      <SectionShell theme={theme} ariaLabel="Undangan berakhir">
+        <div className="mx-auto max-w-md text-center">
+          <h1 className="font-display text-4xl text-ink">Sudah berakhir</h1>
+          {state.groom_name || state.bride_name ? (
+            <p className="mt-3 font-display text-xl text-ink">
+              {state.groom_name} &amp; {state.bride_name}
+            </p>
+          ) : null}
+          <p className="mt-3 text-sm text-muted">
+            Masa aktif undangan ini sudah berakhir pada{" "}
+            {new Date(state.expires_at).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+            .
+          </p>
+          <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-accent">
+            {slug}
+          </p>
+        </div>
+      </SectionShell>
     </main>
   );
 }
