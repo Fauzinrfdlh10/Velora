@@ -38,5 +38,8 @@ export function getMockInvitation(): PublicInvitationData {
     wishes: getMockWishes(),
     bankAccounts: getMockBankAccounts(),
     guestName: null,
+    // TAHAP 6: mock-mode invite tidak punya personal `?guest=<uuid>` —
+    // server actions di mock mode short-circuit dan tidak butuh guestId.
+    guestId: null,
   };
 }

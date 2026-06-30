@@ -56,6 +56,16 @@ export interface PublicInvitationData {
    * Null bila link dibuka tanpa query param personal.
    */
   guestName: string | null;
+  /**
+   * Personal guest identity — dari `?guest=<uuid>` di URL, setelah
+   * divalidasi bahwa UUID tersebut ada di tabel `guests` untuk
+   * client ini. Null bila link dibuka tanpa param, atau param tidak
+   * valid (treated as anonymous).
+   *
+   * TAHAP 6: dipakai oleh RsvpSection agar submit kedua dari tamu
+   * yang sama UPDATE row yang sudah ada (UPSERT) alih-alih INSERT baru.
+   */
+  guestId: string | null;
 }
 
 /**

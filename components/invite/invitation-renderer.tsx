@@ -8,6 +8,7 @@ import { GallerySection } from "./sections/gallery";
 import { RsvpPlaceholderSection } from "./sections/rsvp-placeholder";
 import { AmplopPlaceholderSection } from "./sections/amplop-placeholder";
 import { WishPlaceholderSection } from "./sections/wish-placeholder";
+import { SmoothScrollProvider } from "./smooth-scroll-provider";
 
 /**
  * Velora — Invitation Renderer (RSC)
@@ -21,6 +22,18 @@ import { WishPlaceholderSection } from "./sections/wish-placeholder";
  * Untuk personalisasi per klien (mis. sembunyikan gallery untuk
  * paket basic, atau ubah order) — pindah ke per-client config di
  * prompt berikutnya.
+ *
+ * TAHAP 6: Section RSVP dan Wish sekarang adalah SERVER-AKTIF (terhubung
+ * ke tabel rsvps/wishes). Renderer menurunkan identifier ke mereka:
+ *   - RSVP butuh clientId + guestId (untuk logika UPSERT).
+ *   - Wish butuh clientId untuk RPC dan SSR list seed.
+ *
+ * TAHAP 7: Layer animasi (Lenis + GSAP ScrollTrigger, reduced
+ * motion fallback, anchor hijack) di-mount sekali via
+ * SmoothScrollProvider yang membungkus semua section components.
+ * Section components TETAP Server Component — provider adalah
+ * satu-satunya client entry-point di tree ini, sehingga boundary
+ * RSC tidak terlanggar.
  */
 export function InvitationRenderer({
   slug,
@@ -31,24 +44,31 @@ export function InvitationRenderer({
   theme: ThemeConfig;
   data: PublicInvitationData;
 }) {
+  const { client, guestId } = data;
+
   return (
     <main className="bg-canvas text-ink">
       <ThemeInject theme={theme} />
 
-      <CoverSection theme={theme} data={data} />
-      <CountdownSection theme={theme} data={data} />
-      <EventDetailsSection
-        slug={slug}
-        theme={theme}
-        data={data}
-        guestName={data.guestName}
-      />
-      <GallerySection theme={theme} data={data} />
-      <RsvpPlaceholderSection theme={theme} />
-      <AmplopPlaceholderSection theme={theme} data={data} />
-      <WishPlaceholderSection theme={theme} data={data} />
-
-      <Footer theme={theme} />
+      <SmoothScrollProvider>
+        <CoverSection theme={theme} data={data} />
+        <CountdownSection theme={theme} data={data} />
+        <EventDetailsSection
+          slug={slug}
+          theme={theme}
+          data={data}
+          guestName={data.guestName}
+        />
+        <GallerySection theme={theme} data={data} />
+        <RsvpPlaceholderSection
+          theme={theme}
+          clientId={client.id}
+          guestId={guestId}
+        />
+        <AmplopPlaceholderSection theme={theme} data={data} />
+        <WishPlaceholderSection theme={theme} data={data} />
+        <Footer theme={theme} />
+      </SmoothScrollProvider>
     </main>
   );
 }

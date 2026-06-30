@@ -47,6 +47,7 @@ export function GallerySection({
           return (
             <div
               key={p.id}
+              data-gallery-item
               className={`relative overflow-hidden rounded-md bg-rule/40 border border-rule/45 transition duration-500 hover:scale-[1.01] hover:shadow-md ${gridClasses}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- TODO Tahap 6: migrate to next/image + add picsum.photos + Supabase storage to next.config images.remotePatterns */}

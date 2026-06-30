@@ -29,7 +29,7 @@ import type { BankAccount } from "@/types/database";
  * inactive view. Expired → expired view. Active → full invitation.
  */
 
-type SearchParams = Promise<{ to?: string | string[] }>;
+type SearchParams = Promise<{ to?: string | string[]; guest?: string | string[] }>;
 type RouteParams = Promise<{ slug: string }>;
 
 export async function generateMetadata({
@@ -56,10 +56,14 @@ export default async function InvitationPage({
 
   const [{ slug }, sp] = await Promise.all([params, searchParams]);
   const guestName = parseGuestName(sp?.to);
+  const guestIdParam = parseFirstString(sp?.guest);
 
   const state: PageRenderState = useMock
-    ? { kind: "active", data: withGuestName(getMockInvitation(), guestName) }
-    : await fetchRealState(slug, guestName);
+    ? {
+        kind: "active",
+        data: withMockExtras(getMockInvitation(), guestName, null),
+      }
+    : await fetchRealState(slug, guestName, guestIdParam);
 
   switch (state.kind) {
     case "not-found":
@@ -86,21 +90,63 @@ function parseGuestName(v: string | string[] | undefined): string | null {
   return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
-function withGuestName(
-  data: PublicInvitationData,
-  guestName: string | null,
-): PublicInvitationData {
-  return { ...data, guestName };
+function parseFirstString(v: string | string[] | undefined): string | null {
+  if (!v) return null;
+  const raw = Array.isArray(v) ? v[0] : v;
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /**
- * State resolver untuk klien sungguhan (non-mock). Tahap berikutnya
- * akan mem-orchestrate ketiga fetch paralel dalam satu Promise.all
- * dengan agregasi error handling — saat ini sequential untuk debug.
+ * Resolve `?guest=<uuid>` -> guest UUID yang valid untuk client ini.
+ * Tiga filter berurutan agar tidak melakukan round-trip DB sia-sia:
+ *   1. Format regex UUID (avoid spam dengan invalid strings).
+ *   2. RLS-protected `public.guests` SELECT — anon sudah boleh (lihat
+ *      migration init: policy `guests_select_public` aktif saat
+ *      client.active + not expired).
+ *
+ * Return null kalau tidak valid / tidak ditemukan. Anonymous fallback
+ * selalu aman (UI treat sebagai tanpa guest_id).
+ */
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolveGuestId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string,
+  candidate: string | null,
+): Promise<string | null> {
+  if (!candidate || !UUID_REGEX.test(candidate)) return null;
+  const { data, error } = await supabase
+    .from("guests")
+    .select("id")
+    .eq("id", candidate)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.id;
+}
+
+function withMockExtras(
+  data: PublicInvitationData,
+  guestName: string | null,
+  guestId: string | null,
+): PublicInvitationData {
+  return { ...data, guestName, guestId };
+}
+
+/**
+ * State resolver untuk klien sungguhan (non-mock).
+ *
+ * TAHAP 6: menerima `?guest=<uuid>` dari query param. Jika valid
+ * (format + ada di tabel guests milik client ini), dipakai sebagai
+ * guest_id sehingga submit kedua dari tamu yang sama UPDATE RSVP
+ * row. Null/undefined = anonymous submission.
  */
 async function fetchRealState(
   slug: string,
   guestName: string | null,
+  guestIdParam: string | null,
 ): Promise<PageRenderState> {
   const supabase = await createClient();
   const { data: rpcData, error: rpcError } = await supabase.rpc(
@@ -136,8 +182,9 @@ async function fetchRealState(
     };
   }
 
-  // Fetch data turunan secara paralel.
-  const [galleryRes, wishesRes, bankRes] = await Promise.all([
+  // Resolve guest_id di paralel dengan data turunan agar tidak
+  // menambah latency bila tidak ada guest param.
+  const [galleryRes, wishesRes, bankRes, resolvedGuestId] = await Promise.all([
     supabase
       .from("gallery_photos")
       .select("id, url, position")
@@ -155,6 +202,7 @@ async function fetchRealState(
       .select("bank_accounts")
       .eq("id", row.id)
       .maybeSingle(),
+    resolveGuestId(supabase, row.id, guestIdParam),
   ]);
 
   return {
@@ -183,6 +231,7 @@ async function fetchRealState(
       // di prompt berikutnya via `supabase gen types typescript --linked`.
       bankAccounts: (bankRes.data?.bank_accounts ?? []) as BankAccount[],
       guestName,
+      guestId: resolvedGuestId,
     },
   };
 }
