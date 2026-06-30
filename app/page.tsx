@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Placeholder } from "@/components/ui/placeholder";
 
@@ -6,11 +7,17 @@ import { Placeholder } from "@/components/ui/placeholder";
  * Digunakan untuk memverifikasi semua konfigurasi (Tailwind, Supabase)
  * berjalan dengan benar sebelum implementasi fitur dimulai.
  *
- * Halaman ini akan diganti dengan landing page atau redirect
+ * Halaman ini akan diganti dengan landing page publik atau redirect
  * di tahap development berikutnya.
+ *
+ * CTA tambahan: tampilkan "Masuk" / "Buka Dashboard" tergantung status auth
+ * user saat ini, supaya klien yang sudah login tidak nyasar ke /login.
  */
 export default async function HomePage() {
-  const supabaseStatus = await checkSupabaseConnection();
+  const [supabaseStatus, currentUserEmail] = await Promise.all([
+    checkSupabaseConnection(),
+    getCurrentUserEmail(),
+  ]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-100 px-4">
@@ -58,12 +65,49 @@ export default async function HomePage() {
           </code>{" "}
           untuk memulai development.
         </p>
+
+        {/* Auth CTA — server-side rendered, tidak ada client-side bypass */}
+        <div className="text-center">
+          {currentUserEmail ? (
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-800"
+            >
+              Buka Dashboard →
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm transition hover:bg-neutral-100"
+            >
+              Masuk sebagai Klien
+            </Link>
+          )}
+        </div>
       </div>
     </main>
   );
 }
 
 /* ──────────────── Helpers ──────────────── */
+
+async function getCurrentUserEmail(): Promise<string | null> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return null;
+  }
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
 
 enum Status {
   PASS = "pass",
